@@ -9,7 +9,7 @@ import generate_web as web
 init()
 
 
-def is_movie_already_exist(title: str, movies: list):
+def is_movie_in_db(title: str, movies: list):
     """
         Check if a movie with the given title already exists in the database.
 
@@ -111,7 +111,7 @@ def command_add_movie(movies: list):
 
         title, year, rating, image = movie_info
 
-        if is_movie_already_exist(title, movies):
+        if is_movie_in_db(title, storage.list_movies()):
             print(Fore.RED + "Your movie already exists")
             continue
         break
@@ -133,24 +133,29 @@ def command_update_movie(movies: list):
            None
     """
 
-    user_title_input = get_user_input()
+    user_input_title = get_user_input()
 
-    try:
-        new_rating = float(input(Fore.GREEN + "Enter the new rating (0-10): "))
-        if not (0 <= new_rating <= 10):
-            print(Fore.RED + "Rating must be between 0 and 10")
-            return
-
-    except ValueError:
-        print(Fore.RED + "Rating must be a number")
+    if not is_movie_in_db(user_input_title, movies):
+        print(Fore.RED + f"Movie '{user_input_title}' not found")
         return
 
-    is_updated = storage.update_movie(user_title_input, new_rating)
+    while True:
+        try:
+            new_rating = float(input(Fore.GREEN + "Enter the new rating (0-10): "))
+            if 0 <= new_rating <= 10:
+                break
+            else:
+                print(Fore.RED + "Rating must be between 0 and 10")
+
+        except ValueError:
+            print(Fore.RED + "Rating must be a number")
+
+    is_updated = storage.update_movie(user_input_title, new_rating)
 
     if is_updated:
-        print(Fore.WHITE + f"The movie '{user_title_input}' has been updated")
+        print(Fore.WHITE + f"The movie '{user_input_title}' has been updated")
     else:
-        print(Fore.RED + f"Movie '{user_title_input}' not found in database")
+        print(Fore.RED + f"Movie '{user_input_title}' not found in database")
 
     print(Fore.WHITE + f"{'-' * 40}")
 
@@ -165,15 +170,19 @@ def command_delete_movie(movies: list):
     Returns:
         None
     """
-    title = get_user_input()
+    user_input_title = get_user_input()
 
-    is_deleted = storage.delete_movie(title)
+    if not is_movie_in_db(user_input_title, movies):
+        print(Fore.RED + f"Movie '{user_input_title}' not found")
+        return
+
+    is_deleted = storage.delete_movie(user_input_title)
 
     if is_deleted:
-        print(Fore.WHITE + f"The movie {title} has been deleted")
+        print(Fore.WHITE + f"The movie {user_input_title} has been deleted")
         print(Fore.WHITE + f"{'-' * 40}")
     else:
-        print(Fore.RED + f"I could not find {title}")
+        print(Fore.RED + f"I could not find {user_input_title}")
         print(Fore.WHITE + f"{'-' * 40}")
 
 
@@ -189,6 +198,11 @@ def command_statistics_of_movies(movies: list):
     """
 
     list_of_ratings = []
+
+    if not movies:
+        print(Fore.RED + "Database is empty.")
+        return
+
     for movie in movies:
         list_of_ratings.append(movie[2])
 
@@ -234,6 +248,10 @@ def command_select_random_movie(movies: list):
         None
     """
 
+    if not movies:
+        print(Fore.RED + "Database is empty.")
+        return
+
     random_movie = random.choice(movies)
     title = random_movie[0]
     rating = random_movie[2]
@@ -253,15 +271,19 @@ def command_searching_movie(movies: list):
         None
     """
 
-    title = get_user_input()
+    if not movies:
+        print(Fore.RED + "Database is empty.")
+        return
+
+    user_input_title = get_user_input()
     list_of_all_movies_we_found = []
 
     for movie in movies:
-        if title.lower() in movie[0].lower():
+        if user_input_title.lower() in movie[0].lower():
             list_of_all_movies_we_found.append(movie)
 
     if not list_of_all_movies_we_found:
-        print(Fore.RED + f"I could not find ´{title}´")
+        print(Fore.RED + f"I could not find ´{user_input_title}´")
         print(Fore.WHITE + f"{'-' * 40}")
 
     else:
@@ -281,6 +303,10 @@ def command_sorted_by_rating(movies: list):
     Returns:
         None
     """
+
+    if not movies:
+        print(Fore.RED + "Database is empty.")
+        return
 
     sorted_movies = sorted(movies, key=lambda movie: movie[2], reverse=True)
     print(Fore.WHITE + "Sorted list of  movies:")
@@ -303,6 +329,11 @@ def command_histogram(movies: list):
     saving_in = input(Fore.GREEN + "In what format do you want to save the histogram (png, jpeg)?: ").lower()
 
     ratings = []
+
+    if not movies:
+        print(Fore.RED + "Database is empty.")
+        return
+
     for movie in movies:
         ratings.append(movie[2])
 
